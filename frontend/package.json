@@ -1,0 +1,22 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.2",
+    "cloudinary": "^2.9.0",
+    "marked": "^17.0.3",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "slugify": "^1.6.6"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.2"
+  }
+}
