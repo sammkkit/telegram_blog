@@ -400,7 +400,8 @@ export async function POST(request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Webhook error:", err);
-    await sendReply(chatId, "❌ Something went wrong. Please try again.\n\nUse /cancel to reset.");
+    const errMsg = err.message || String(err);
+    await sendReply(chatId, "❌ Error: " + errMsg.substring(0, 200) + "\n\nUse /cancel to reset.");
     return NextResponse.json({ ok: true });
   }
 }
