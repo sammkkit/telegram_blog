@@ -10,7 +10,7 @@ import {
 import cloudinary from "@/lib/cloudinary";
 
 const TELEGRAM_API = "https://api.telegram.org/bot" + process.env.TELEGRAM_BOT_TOKEN;
-const ALLOWED_USER_ID = process.env.ALLOWED_TELEGRAM_USER_ID;
+const ALLOWED_USER_IDS = new Set((process.env.ALLOWED_TELEGRAM_USER_ID || "").split(",").map(id => id.trim()));
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 // ─── TELEGRAM HELPERS ───────────────────────────
@@ -296,7 +296,7 @@ async function handleCallback(callbackQuery) {
   const userId = String(callbackQuery.from.id);
   const data = callbackQuery.data;
 
-  if (userId !== ALLOWED_USER_ID) {
+  if (!ALLOWED_USER_IDS.has(userId)) {
     await answerCallback(callbackQuery.id, "⛔ Unauthorized");
     return;
   }
@@ -338,7 +338,7 @@ export async function POST(request) {
   const userId = String(message.from?.id);
 
   // Check allowed user
-  if (userId !== ALLOWED_USER_ID) {
+  if (!ALLOWED_USER_IDS.has(userId)) {
     await sendReply(chatId, "⛔ *Unauthorized.*\n\nYou don't have permission to use this bot.");
     return NextResponse.json({ ok: true });
   }
