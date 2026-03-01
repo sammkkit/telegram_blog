@@ -181,7 +181,7 @@ async function handleConversation(chatId, message, state) {
       await setBotState(chatId, { step: "content", category: text });
       await sendReply(
         chatId,
-        `✅ Category: *${text}*\n\n📄 Now write the *content*.\n_(Markdown is supported: **bold**, *italic*, \\`code\\`, etc.)_`
+        `✅ Category: *${text}*\n\n📄 Now write the *content*.\n_(Markdown is supported: bold, italic, etc.)_`
       );
       break;
     }
