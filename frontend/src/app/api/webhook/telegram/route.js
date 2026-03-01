@@ -9,7 +9,7 @@ import {
 } from "@/lib/db";
 import cloudinary from "@/lib/cloudinary";
 
-const TELEGRAM_API = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
+const TELEGRAM_API = "https://api.telegram.org/bot" + process.env.TELEGRAM_BOT_TOKEN;
 const ALLOWED_USER_ID = process.env.ALLOWED_TELEGRAM_USER_ID;
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
@@ -17,7 +17,7 @@ const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 async function sendReply(chatId, text, extra = {}) {
   try {
-    await fetch(`${TELEGRAM_API}/sendMessage`, {
+    await fetch(TELEGRAM_API + "/sendMessage", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -34,7 +34,7 @@ async function sendReply(chatId, text, extra = {}) {
 
 async function answerCallback(callbackQueryId, text) {
   try {
-    await fetch(`${TELEGRAM_API}/answerCallbackQuery`, {
+    await fetch(TELEGRAM_API + "/answerCallbackQuery", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -49,10 +49,10 @@ async function answerCallback(callbackQueryId, text) {
 }
 
 async function getFileUrl(fileId) {
-  const res = await fetch(`${TELEGRAM_API}/getFile?file_id=${fileId}`);
+  const res = await fetch(TELEGRAM_API + "/getFile?file_id=" + fileId);
   const data = await res.json();
   if (!data.ok) throw new Error("Failed to get file from Telegram.");
-  return `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${data.result.file_path}`;
+  return "https://api.telegram.org/file/bot" + process.env.TELEGRAM_BOT_TOKEN + "/" + data.result.file_path;
 }
 
 async function uploadImage(imageUrl) {
@@ -71,64 +71,58 @@ async function uploadImage(imageUrl) {
 async function handleStart(chatId) {
   await sendReply(
     chatId,
-    `👋 *Welcome to Canvas of Emotions!*
-
-I'm your publishing assistant. Send me photos with stories, and I'll turn them into beautiful blog posts.
-
-Use /help to see all commands.`
+    "👋 *Welcome to Canvas of Emotions!*\n\nI'm your publishing assistant. Send me photos with stories, and I'll turn them into beautiful blog posts.\n\nUse /help to see all commands."
   );
 }
 
 async function handleHelp(chatId) {
   await sendReply(
     chatId,
-    `📖 *Available Commands*
-
-/create — Start creating a new post (guided)
-/list — View your recent posts
-/delete \`slug\` — Delete a post by slug
-/cancel — Cancel the current operation
-/help — Show this message
-
-*Quick publish:* Send a photo with this caption format:
-\`\`\`
-Title: Your Title
-Category: Your Category
----
-Your content here...
-\`\`\``
+    "📖 *Available Commands*\n\n" +
+    "/create — Start creating a new post (guided)\n" +
+    "/list — View your recent posts\n" +
+    "/delete — Delete a post by slug\n" +
+    "/cancel — Cancel the current operation\n" +
+    "/help — Show this message\n\n" +
+    "*Quick publish:* Send a photo with this caption format:\n\n" +
+    "Title: Your Title\n" +
+    "Category: Your Category\n" +
+    "---\n" +
+    "Your content here..."
   );
 }
 
 async function handleCreate(chatId) {
+  // Clear any stale state first
+  await clearBotState(chatId);
   await setBotState(chatId, { step: "title" });
-  await sendReply(chatId, `📝 *Let's create a new post!*\n\nWhat's the *title*?`);
+  await sendReply(chatId, "📝 *Let's create a new post!*\n\nWhat's the *title*?");
 }
 
 async function handleCancel(chatId) {
   await clearBotState(chatId);
-  await sendReply(chatId, `✅ Operation cancelled.`);
+  await sendReply(chatId, "✅ Operation cancelled.");
 }
 
 async function handleList(chatId) {
   const posts = await getRecentPosts(10);
 
   if (posts.length === 0) {
-    await sendReply(chatId, `📭 *No posts yet.*\n\nUse /create to write your first post!`);
+    await sendReply(chatId, "📭 *No posts yet.*\n\nUse /create to write your first post!");
     return;
   }
 
-  let text = `📚 *Recent Posts* (${posts.length})\n\n`;
+  let text = "📚 *Recent Posts* (" + posts.length + ")\n\n";
   posts.forEach((p, i) => {
-    text += `${i + 1}. *${p.title}*\n   📂 ${p.category.name} · 🔗 \`${p.slug}\`\n\n`;
+    text += (i + 1) + ". *" + p.title + "*\n   📂 " + p.category.name + " · 🔗 " + p.slug + "\n\n";
   });
-  text += `_To delete a post, use_ /delete \`slug\``;
+  text += "To delete a post, tap the ✕ button below.";
 
   // Build inline keyboard with delete buttons
   const keyboard = posts.map((p) => [
     {
-      text: `✕ ${p.title.length > 25 ? p.title.substring(0, 25) + "..." : p.title}`,
-      callback_data: `delete:${p.slug}`,
+      text: "✕ " + (p.title.length > 25 ? p.title.substring(0, 25) + "..." : p.title),
+      callback_data: "delete:" + p.slug,
     },
   ]);
 
@@ -141,16 +135,16 @@ async function handleDelete(chatId, slug) {
   if (!slug) {
     await sendReply(
       chatId,
-      `❌ Please provide a slug.\n\nUsage: /delete \`your-post-slug\`\n\nUse /list to see your posts and their slugs.`
+      "❌ Please provide a slug.\n\nUsage: /delete your-post-slug\n\nUse /list to see your posts and their slugs."
     );
     return;
   }
 
   try {
     const post = await deletePost(slug.trim());
-    await sendReply(chatId, `🗑️ *Deleted:* ${post.title}`);
+    await sendReply(chatId, "🗑️ *Deleted:* " + post.title);
   } catch {
-    await sendReply(chatId, `❌ Post not found: \`${slug}\``);
+    await sendReply(chatId, "❌ Post not found: " + slug);
   }
 }
 
@@ -162,47 +156,47 @@ async function handleConversation(chatId, message, state) {
   switch (state.step) {
     case "title": {
       if (!text) {
-        await sendReply(chatId, `❌ Please send a text *title*, not a photo or file.`);
+        await sendReply(chatId, "❌ Please send a text *title*, not a photo or file.");
         return;
       }
       await setBotState(chatId, { step: "category", title: text });
       await sendReply(
         chatId,
-        `✅ Title: *${text}*\n\n📂 Now, what *category*?\n_(e.g., Poetry, Life, Art, Thoughts)_`
+        "✅ Title: *" + text + "*\n\n📂 Now, what *category*?\n(e.g., Poetry, Life, Art, Thoughts)"
       );
       break;
     }
 
     case "category": {
       if (!text) {
-        await sendReply(chatId, `❌ Please send a text *category*.`);
+        await sendReply(chatId, "❌ Please send a text *category*.");
         return;
       }
       await setBotState(chatId, { step: "content", category: text });
       await sendReply(
         chatId,
-        `✅ Category: *${text}*\n\n📄 Now write the *content*.\n_(Markdown is supported: bold, italic, etc.)_`
+        "✅ Category: *" + text + "*\n\n📄 Now write the *content*.\n(Markdown supported: bold, italic, etc.)"
       );
       break;
     }
 
     case "content": {
       if (!text) {
-        await sendReply(chatId, `❌ Please send the *content* as text.`);
+        await sendReply(chatId, "❌ Please send the *content* as text.");
         return;
       }
       await setBotState(chatId, { step: "photo", content: text });
-      await sendReply(chatId, `✅ Content saved!\n\n📸 Last step — send a *photo* for this post.`);
+      await sendReply(chatId, "✅ Content saved!\n\n📸 Last step — send a *photo* for this post.");
       break;
     }
 
     case "photo": {
       if (!message.photo || message.photo.length === 0) {
-        await sendReply(chatId, `❌ Please send a *photo* (not a file or text).`);
+        await sendReply(chatId, "❌ Please send a *photo* (not a file or text).");
         return;
       }
 
-      await sendReply(chatId, `⏳ Uploading image and creating your post...`);
+      await sendReply(chatId, "⏳ Uploading image and creating your post...");
 
       // Upload image
       const photo = message.photo[message.photo.length - 1];
@@ -222,20 +216,14 @@ async function handleConversation(chatId, message, state) {
 
       await sendReply(
         chatId,
-        `✅ *Published!*
-
-📝 *${post.title}*
-📂 ${post.category.name}
-🔗 \`${post.slug}\`
-
-Use /create to write another post!`
+        "✅ *Published!*\n\n📝 *" + post.title + "*\n📂 " + post.category.name + "\n🔗 " + post.slug + "\n\nUse /create to write another post!"
       );
       break;
     }
 
     default:
       await clearBotState(chatId);
-      await sendReply(chatId, `Something went wrong. Use /create to start over.`);
+      await sendReply(chatId, "Something went wrong. Use /create to start over.");
   }
 }
 
@@ -277,12 +265,12 @@ async function handleQuickPublish(chatId, message) {
 
     await sendReply(
       chatId,
-      `📸 Got your photo! But I need a caption.\n\nEither:\n• Use /create for a guided flow\n• Or add a caption with this format:\n\`\`\`\nTitle: Your Title\nCategory: Your Category\n---\nYour content...\n\`\`\``
+      "📸 Got your photo! But I need a caption.\n\nEither:\n• Use /create for a guided flow\n• Or add a caption with this format:\n\nTitle: Your Title\nCategory: Your Category\n---\nYour content..."
     );
     return;
   }
 
-  await sendReply(chatId, `⏳ Publishing your post...`);
+  await sendReply(chatId, "⏳ Publishing your post...");
 
   const photo = message.photo[message.photo.length - 1];
   const fileUrl = await getFileUrl(photo.file_id);
@@ -297,7 +285,7 @@ async function handleQuickPublish(chatId, message) {
 
   await sendReply(
     chatId,
-    `✅ *Published!*\n\n📝 *${post.title}*\n📂 ${post.category.name}\n🔗 \`${post.slug}\``
+    "✅ *Published!*\n\n📝 *" + post.title + "*\n📂 " + post.category.name + "\n🔗 " + post.slug
   );
 }
 
@@ -317,11 +305,11 @@ async function handleCallback(callbackQuery) {
     const slug = data.substring(7);
     try {
       const post = await deletePost(slug);
-      await answerCallback(callbackQuery.id, `🗑️ Deleted: ${post.title}`);
+      await answerCallback(callbackQuery.id, "🗑️ Deleted: " + post.title);
       // Refresh the list
       await handleList(chatId);
     } catch {
-      await answerCallback(callbackQuery.id, `❌ Post not found`);
+      await answerCallback(callbackQuery.id, "❌ Post not found");
     }
   }
 }
@@ -351,7 +339,7 @@ export async function POST(request) {
 
   // Check allowed user
   if (userId !== ALLOWED_USER_ID) {
-    await sendReply(chatId, `⛔ *Unauthorized.*\n\nYou don't have permission to use this bot.`);
+    await sendReply(chatId, "⛔ *Unauthorized.*\n\nYou don't have permission to use this bot.");
     return NextResponse.json({ ok: true });
   }
 
@@ -385,7 +373,7 @@ export async function POST(request) {
           await handleDelete(chatId, args.join(" "));
           break;
         default:
-          await sendReply(chatId, `❓ Unknown command: \`${cmd}\`\n\nUse /help to see available commands.`);
+          await sendReply(chatId, "❓ Unknown command: " + cmd + "\n\nUse /help to see available commands.");
       }
       return NextResponse.json({ ok: true });
     }
@@ -406,13 +394,13 @@ export async function POST(request) {
     // ── Unrecognized message ──
     await sendReply(
       chatId,
-      `💡 Use /create to start a new post, or send a photo with a caption to quick-publish.\n\nType /help for all commands.`
+      "💡 Use /create to start a new post, or send a photo with a caption to quick-publish.\n\nType /help for all commands."
     );
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Webhook error:", err);
-    await sendReply(chatId, `❌ Something went wrong. Please try again.\n\nUse /cancel to reset.`);
+    await sendReply(chatId, "❌ Something went wrong. Please try again.\n\nUse /cancel to reset.");
     return NextResponse.json({ ok: true });
   }
 }
