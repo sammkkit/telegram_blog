@@ -7,6 +7,8 @@ function createSlug(text) {
   return `${base}-${suffix}`;
 }
 
+// ─── POST OPERATIONS ────────────────────────────
+
 /**
  * Create a new blog post. Upserts the category if it doesn't exist.
  */
@@ -32,6 +34,24 @@ export async function createPost({ title, content, imageUrl, categoryName }) {
       categoryId: category.id,
     },
     include: { category: true },
+  });
+}
+
+/**
+ * Delete a post by slug.
+ */
+export async function deletePost(slug) {
+  return prisma.post.delete({ where: { slug } });
+}
+
+/**
+ * Get recent posts (for /list command).
+ */
+export async function getRecentPosts(limit = 10) {
+  return prisma.post.findMany({
+    take: limit,
+    include: { category: { select: { name: true, slug: true } } },
+    orderBy: { createdAt: "desc" },
   });
 }
 
@@ -73,4 +93,35 @@ export async function getAllCategories() {
     include: { _count: { select: { posts: true } } },
     orderBy: { name: "asc" },
   });
+}
+
+// ─── BOT STATE OPERATIONS ───────────────────────
+
+/**
+ * Get the current bot conversation state for a chat.
+ */
+export async function getBotState(chatId) {
+  return prisma.botState.findUnique({ where: { chatId: String(chatId) } });
+}
+
+/**
+ * Set/update the bot conversation state.
+ */
+export async function setBotState(chatId, data) {
+  return prisma.botState.upsert({
+    where: { chatId: String(chatId) },
+    update: data,
+    create: { chatId: String(chatId), ...data },
+  });
+}
+
+/**
+ * Clear the bot conversation state (after post is created or cancelled).
+ */
+export async function clearBotState(chatId) {
+  try {
+    await prisma.botState.delete({ where: { chatId: String(chatId) } });
+  } catch {
+    // State might not exist, that's fine
+  }
 }

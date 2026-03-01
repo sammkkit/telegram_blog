@@ -30,3 +30,12 @@ model Category {
   slug  String @unique
   posts Post[]
 }
+
+model BotState {
+  chatId    String   @id
+  step      String   // "title", "category", "content", "photo"
+  title     String?
+  category  String?
+  content   String?
+  updatedAt DateTime @updatedAt
+}
